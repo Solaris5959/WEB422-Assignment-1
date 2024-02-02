@@ -7,7 +7,7 @@
 *
 * Name: Connor McDonald Student ID: 136123221 Date: 2/2/2024
 *
-* Published URL: ___________________________________________________________
+* Published URL: https://good-cyan-moose-veil.cyclic.app/
 *********************************************************************************/
 
 // Setup
