@@ -1,57 +1,93 @@
+/********************************************************************************
+* WEB422 – Assignment 1
+* I declare that this assignment is my own work in accordance with Seneca's
+* Academic Integrity Policy:
+*
+* https://www.senecapolytechnic.ca/about/policies/academic-integrity-policy.html
+*
+* Name: Connor McDonald Student ID: 136123221 Date: 2/2/2024
+*
+* Published URL: ___________________________________________________________
+*********************************************************************************/
+
 // Setup
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const dotenv = require('dotenv').config();
+const ListingsDB = require('./modules/listingsDB.js');
 const app = express();
+const db = new ListingsDB();
 const HTTP_PORT = process.env.PORT || 8080;
-// Or use some other port number that you like better
 
 // Add support for incoming JSON entities
 app.use(cors());
 app.use(express.json())
 
+// init db module
+db.initialize(process.env.MONGODB_CONN_STRING).then(() => {
+    app.listen(HTTP_PORT, () => {
+        console.log(`server listening on: ${HTTP_PORT}`);
+    });
+}).catch((err) => {
+    console.log(err);
+});
+
 // Deliver the app's home page to browser clients
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '/index.html'));
+  res.json({ message: 'API Listening' });
 });
 
-// Get all
-app.get('/api/items', (req, res) => {
-  res.json({ message: 'fetch all items' });
-});
-
-// Get one
-app.get('/api/items/:itemId', (req, res) => {
-  res.json({ message: `get user with identifier: ${req.params.id}` });
-});
-
-// Add new
-// This route expects a JSON object in the body, e.g. { "firstName": "Peter", "lastName": "McIntyre" }
-app.post('/api/items', (req, res) => {
-  // MUST return HTTP 201
-  res.status(201).json({ message: `added a new item: ${req.body.firstName} ${req.body.lastName}` });
-});
-
-// Edit existing
-// This route expects a JSON object in the body, e.g. { "id": 123, "firstName": "Peter", "lastName": "McIntyre" }
-app.put('/api/items/:id', (req, res) => {
-  res.json({
-    message: `updated item with identifier: ${req.params.id} to ${req.body.firstName} ${req.body.lastName}`,
+// POST /api/listings
+app.post('/api/listings', (req, res) => {
+  db.addNewListing(req.body).then((data) => {
+    res.status(201).json(data);
+  }).catch((err) => {
+    res.status(400).json({ message: err.message });
   });
 });
 
-// Delete item
-app.delete('/api/items/:id', (req, res) => {
-  res.status(200).json({ message: `deleted user with identifier: ${req.params.id}` });
-});
+// GET /api/listings
+app.get('/api/listings', (req, res) => {
+    db.getAllListings(req.query.page, req.query.perPage, req.query.name).then((data) => {
+        res.status(200).json(data);
+    }).catch((err) => {
+        res.status(400).json({ message: err.message });
+    });
+    }
+);
+
+// GET /api/listings/:id
+app.get('/api/listings/:id', (req, res) => {
+    db.getListingById(req.params.id).then((data) => {
+        res.status(200).json(data);
+    }).catch((err) => {
+        res.status(400).json({ message: err.message });
+    });
+}
+);
+
+// PUT /api/listings/:id
+app.put('/api/listings/:id', (req, res) => {
+    db.updateListingById(req.body, req.params.id).then((data) => {
+        res.status(200).json(data);
+    }).catch((err) => {
+        res.status(400).json({ message: err.message });
+    });
+}
+);
+
+// DELETE /api/listings/:id
+app.delete('/api/listings/:id', (req, res) => {
+    db.deleteListingById(req.params.id).then(() => {
+        res.status(204).send();
+    }).catch((err) => {
+        res.status(400).json({ message: err.message });
+    });
+}
+);
 
 // Resource not found (this should be at the end)
 app.use((req, res) => {
   res.status(404).send('Resource not found');
-});
-
-// Tell the app to start listening for requests
-app.listen(HTTP_PORT, () => {
-  console.log('Ready to handle requests on port ' + HTTP_PORT);
 });
